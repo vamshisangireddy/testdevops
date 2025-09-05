@@ -1,56 +1,40 @@
-# Microservices Project with AWS, EC2, PostgreSQL, and Docker
+# testdevops Project
 
-This project is a sample microservices architecture consisting of three services: User Service, Product Service, and Order Service.
+This project contains the necessary configurations for a CI/CD pipeline using Jenkins to build, test, and deploy an application to Kubernetes.
 
-The services are built with Python (Flask), containerized with Docker, and designed to be deployed on AWS. The database is PostgreSQL, configured to run in a Docker container on an EC2 instance.
+## Prerequisites
 
-## Project Structure
+Before you begin, ensure you have the following tools installed on your local machine:
 
-```
-/
-├── docker-compose.yml      # For local orchestration
-├── user-service/           # User microservice
-├── product-service/        # Product microservice
-└── order-service/          # Order microservice
-```
+- [Docker](https://docs.docker.com/get-docker/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+- A local Kubernetes cluster, such as:
+  - [Minikube](https://minikube.sigs.k8s.io/docs/start/)
+  - [kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
 
-Each service directory contains its own `Dockerfile` and source code.
+## Getting Started
 
-## Local Development
-
-### Prerequisites
-
-- Docker
-- Docker Compose
-
-### Running the Services
-
-1.  Clone the repository.
-2.  Navigate to the project root directory.
-3.  Run the following command to build and start all services:
-
-    ```bash
-    docker-compose up --build
+1.  **Clone the repository:**
+    ```sh
+    git clone https://github.com/vamshisangireddy/testdevops.git
+    cd testdevops
     ```
 
-### Endpoints
+2.  **Start your local Kubernetes cluster:**
 
-Once running, the services will be available at:
+    For Minikube:
+    ```sh
+    minikube start
+    ```
 
-- **User Service**: `http://localhost:5001/users`
-- **Product Service**: `http://localhost:5002/products`
-- **Order Service**: `http://localhost:5003/orders`
+3.  **Run the application:**
 
-The local PostgreSQL database is exposed on `localhost:5432`.
+    *(Add steps here on how to apply the Kubernetes manifests and run the application. For example:)*
+    ```sh
+    # Apply all Kubernetes configurations
+    kubectl apply -f k8s/
+    ```
 
-## AWS Deployment
+## Jenkins Pipeline
 
-A high-level guide for deploying to AWS is as follows:
-
-1.  **Database**: Launch an EC2 instance, install Docker, and run a PostgreSQL container. Ensure the security group allows traffic on port 5432 from your services.
-2.  **Container Registry**: Build Docker images for each service and push them to Amazon ECR.
-3.  **Orchestration**: Use Amazon ECS to deploy the containers.
-    - Create an ECS Cluster.
-    - Create a Task Definition for each service, pointing to the ECR image and providing the database connection details as environment variables.
-    - Create a Service for each Task Definition to manage the running containers.
-4.  **Networking**: Use an Application Load Balancer to route external traffic to the correct service based on path or subdomain.
+This repository contains a `Jenkinsfile` that defines the CI/CD pipeline. To test it, you can set up a new pipeline job in your Jenkins instance and point it to this repository.
