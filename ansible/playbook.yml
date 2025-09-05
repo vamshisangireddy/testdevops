@@ -1,0 +1,54 @@
+---
+- name: Configure K8s Master Node
+  hosts: k8s_master
+  become: yes
+  tasks:
+    - name: Install kubelet, kubeadm, kubectl
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+          - kubelet
+          - kubeadm
+          - kubectl
+
+    - name: Initialize the Kubernetes cluster using kubeadm
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16
+
+    - name: Setup kubeconfig for ubuntu user
+      command: "{{ item }}"
+      with_items:
+        - mkdir -p /home/ubuntu/.kube
+        - cp /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
+        - chown ubuntu:ubuntu /home/ubuntu/.kube/config
+
+    - name: Install Pod network (Flannel)
+      become: false
+      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+    - name: Get join command
+      command: kubeadm token create --print-join-command
+      register: join_command
+
+    - name: Set join command as a fact
+      set_fact:
+        join_command: "{{ join_command.stdout }}"
+
+- name: Configure K8s Worker Nodes
+  hosts: k8s_workers
+  become: yes
+  tasks:
+    - name: Install kubelet, kubeadm
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+          - kubelet
+          - kubeadm
+
+    - name: Join worker nodes to the cluster
+      command: "{{ hostvars['k8s_master_1'].join_command }}"

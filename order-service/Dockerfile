@@ -14,9 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application code into the container
 COPY app.py .
 
-# Make port 5002 available to the world outside this container
-EXPOSE 5002
+# Make port 5003 available to the world outside this container
+EXPOSE 5003
 
 # Run app.py when the container launches
 # Using gunicorn for a more production-ready server
-CMD ["gunicorn", "--bind", "0.0.0.0:5002", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5003", "app:app"]
