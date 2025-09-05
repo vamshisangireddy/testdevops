@@ -1,11 +1,11 @@
-version: '3.8'
+#version: '3'
 
 services:
   user-service:
     build: ./user-service
     restart: unless-stopped
-    env_file:
-      - ./user-service/.env
+    #env_file:
+    #  - ./user-service/.env
     ports:
       - "5001:5000"
     networks:
@@ -19,8 +19,8 @@ services:
   product-service:
     build: ./product-service
     restart: unless-stopped
-    env_file:
-      - ./product-service/.env
+    #env_file:
+    #  - ./product-service/.env
     ports:
       - "5002:5000"
     networks:
@@ -29,8 +29,8 @@ services:
   order-service:
     build: ./order-service
     restart: unless-stopped
-    env_file:
-      - ./order-service/.env
+    #env_file:
+    #  - ./order-service/.env
     ports:
       - "5003:5000"
     networks:
