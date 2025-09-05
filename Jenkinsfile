@@ -1,6 +1,10 @@
 pipeline {
     agent any
-
+    triggers {
+        // This makes the pipeline responsive to GitHub push events.
+        // It relies on a companion configuration in the Jenkins job settings.
+        githubPush()
+    }
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         DOCKERHUB_USERNAME = DOCKERHUB_CREDENTIALS_USR
