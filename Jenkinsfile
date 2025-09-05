@@ -6,7 +6,10 @@ pipeline {
         githubPush()
     }
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        withDockerRegistry(credentialsId: 'dockerhub-credentials') {
+    // some block
+        }
+        //DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')'''
         DOCKERHUB_USERNAME = DOCKERHUB_CREDENTIALS_USR
         // The build number is used to tag the Docker images
         IMAGE_TAG = "build-${BUILD_NUMBER}"
