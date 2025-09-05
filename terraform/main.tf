@@ -1,28 +1,32 @@
 provider "aws" {
-  region = "us-east-1" // Change to your preferred region
+  region = var.aws_region
 }
 
-resource "aws_key_pair" "k8s_key" {
-  key_name   = "k8s-key"
-  public_key = file("~/.ssh/id_rsa_k8s.pub") // Ensure you have this key pair
+resource "aws_vpc" "k8s_vpc" {
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name = "k8s-vpc"
+  }
+}
+
+resource "aws_subnet" "k8s_subnet" {
+  vpc_id     = aws_vpc.k8s_vpc.id
+  cidr_block = "10.0.1.0/24"
+  tags = {
+    Name = "k8s-subnet"
+  }
 }
 
 resource "aws_security_group" "k8s_sg" {
   name        = "k8s-sg"
-  description = "Allow traffic for K8s cluster"
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] // For demo purposes. Restrict to your IP in production.
-  }
+  description = "Allow all inbound traffic for K8s"
+  vpc_id      = aws_vpc.k8s_vpc.id
 
   ingress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    self        = true
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -34,32 +38,26 @@ resource "aws_security_group" "k8s_sg" {
 }
 
 resource "aws_instance" "k8s_master" {
-  ami           = "ami-0c55b159cbfafe1f0" // Ubuntu 20.04 LTS in us-east-1
+  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu 20.04 LTS in us-east-1, change if needed
   instance_type = "t2.medium"
-  key_name      = aws_key_pair.k8s_key.key_name
-  security_groups = [aws_security_group.k8s_sg.name]
+  subnet_id     = aws_subnet.k8s_subnet.id
+  vpc_security_group_ids = [aws_security_group.k8s_sg.id]
+  key_name      = var.aws_key_name
 
   tags = {
     Name = "k8s-master"
   }
 }
 
-resource "aws_instance" "k8s_worker" {
+resource "aws_instance" "k8s_workers" {
   count         = 2
-  ami           = "ami-0c55b159cbfafe1f0" // Ubuntu 20.04 LTS in us-east-1
+  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu 20.04 LTS in us-east-1, change if needed
   instance_type = "t2.medium"
-  key_name      = aws_key_pair.k8s_key.key_name
-  security_groups = [aws_security_group.k8s_sg.name]
+  subnet_id     = aws_subnet.k8s_subnet.id
+  vpc_security_group_ids = [aws_security_group.k8s_sg.id]
+  key_name      = var.aws_key_name
 
   tags = {
     Name = "k8s-worker-${count.index + 1}"
   }
-}
-
-output "k8s_master_public_ip" {
-  value = aws_instance.k8s_master.public_ip
-}
-
-output "k8s_worker_ips" {
-  value = [for instance in aws_instance.k8s_worker : instance.public_ip]
 }
