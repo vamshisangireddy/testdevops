@@ -1,23 +1,21 @@
 pipeline {
     agent any
+
     triggers {
-        // This makes the pipeline responsive to GitHub push events.
-        // It relies on a companion configuration in the Jenkins job settings.
         githubPush()
     }
+
     environment {
-        
-        PATH = "/usr/local/bin:${env.PATH}"
+        // Correct way to use credentials in Jenkins
+        // This makes the DOCKERHUB_USERNAME and DOCKERHUB_PASSWORD environment variables available
+        // as strings from the credential item 'dockerhub-credentials'.
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-        DOCKERHUB_USERNAME = 'DOCKERHUB_CREDENTIALS_USR'
-        DOCKERHUB_PASSWORD = 'DOCKERHUB_CREDENTIALS_PSW'
+        DOCKERHUB_USERNAME = DOCKERHUB_CREDENTIALS.get('username')
+        DOCKERHUB_PASSWORD = DOCKERHUB_CREDENTIALS.get('password')
+        
         // The build number is used to tag the Docker images
         IMAGE_TAG = "build-${BUILD_NUMBER}"
     }
-
-    //tools {
-     //   terraform 'terraform-1.6.5' // Assumes a Terraform tool configured in Jenkins
-    //}
 
     stages {
         stage('Checkout') {
@@ -60,16 +58,25 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Provision Infrastructure') {
             steps {
-                dir('terraform') {
-                    sh 'terraform init'
-                    // You need to pass your AWS key pair name.
-                    // It's recommended to manage the terraform.tfvars file securely.
-                    // For this example, we create it on the fly.
-                    sh 'echo \'aws_key_name = "your-aws-key-pair-name"\' > terraform.tfvars'
-                    sh 'terraform apply -auto-approve -var-file=terraform.tfvars'
+                script {
+                    // Use a try/finally block for cleanup to prevent dangling resources
+                    try {
+                        dir('terraform') {
+                            sh 'terraform init'
+                            // Use a more secure way to manage variables, e.g., with credentials or Jenkins secrets
+                            // For this example, we'll write it on the fly.
+                            sh 'echo \'aws_key_name = "your-aws-key-pair-name"\' > terraform.tfvars'
+                            sh 'terraform apply -auto-approve -var-file=terraform.tfvars'
+                        }
+                    } finally {
+                        // This block will run even if terraform apply fails.
+                        dir('terraform') {
+                            sh 'terraform destroy -auto-approve -var-file=terraform.tfvars'
+                        }
+                    }
                 }
             }
         }
@@ -84,18 +91,22 @@ pipeline {
                         WORKER_1_IP=$(jq -r .k8s_worker_1_public_ip.value tf_output.json)
                         WORKER_2_IP=$(jq -r .k8s_worker_2_public_ip.value tf_output.json)
 
-                        sed -e "s/\\${k8s_master_public_ip}/$MASTER_IP/" \\
+                        sed -i.bak -e "s/\\${k8s_master_public_ip}/$MASTER_IP/" \\
                             -e "s/\\${k8s_worker_1_public_ip}/$WORKER_1_IP/" \\
                             -e "s/\\${k8s_worker_2_public_ip}/$WORKER_2_IP/" \\
-                            inventory.ini > inventory.ini.tmp && mv inventory.ini.tmp inventory.ini
+                            inventory.ini
                     '''
-                    // You'll need to add your SSH private key to the Jenkins agent
-                    // and reference it here, or use the SSH Agent plugin.
-                    ansiblePlaybook(
-                        playbook: 'playbook.yml',
-                        inventory: 'inventory.ini',
-                        credentialsId: 'your-ssh-private-key-credential-id'
-                    )
+                    // Use the SSH Agent plugin for secure key management
+                    sshagent(credentials: ['your-ssh-private-key-credential-id']) {
+                        ansiblePlaybook(
+                            playbook: 'playbook.yml',
+                            inventory: 'inventory.ini',
+                            // The credentialsId is now handled by the sshagent block.
+                            // Ensure your playbook and ansible.cfg are configured to use agent forwarding.
+                            ansibleHostKeyChecking: false, // WARNING: Use with caution in production.
+                            vaultCredentialsId: null
+                        )
+                    }
                 }
             }
         }
@@ -104,9 +115,9 @@ pipeline {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig']) {
                     sh """
-                    sed -i 's|image: .*|image: ${DOCKERHUB_USERNAME}/user-service:${IMAGE_TAG}|' k8s/user-service.yaml
-                    sed -i 's|image: .*|image: ${DOCKERHUB_USERNAME}/product-service:${IMAGE_TAG}|' k8s/product-service.yaml
-                    sed -i 's|image: .*|image: ${DOCKERHUB_USERNAME}/order-service:${IMAGE_TAG}|' k8s/order-service.yaml
+                    sed -i.bak 's|image: .*|image: ${DOCKERHUB_USERNAME}/user-service:${IMAGE_TAG}|' k8s/user-service.yaml
+                    sed -i.bak 's|image: .*|image: ${DOCKERHUB_USERNAME}/product-service:${IMAGE_TAG}|' k8s/product-service.yaml
+                    sed -i.bak 's|image: .*|image: ${DOCKERHUB_USERNAME}/order-service:${IMAGE_TAG}|' k8s/order-service.yaml
                     """
                     sh 'kubectl apply -f k8s/user-service.yaml'
                     sh 'kubectl apply -f k8s/product-service.yaml'
@@ -118,6 +129,8 @@ pipeline {
 }
 
 void buildAndPush(String imageName, String dockerfile, String context) {
+    // The credentials are now available as environment variables.
+    // The `docker.withRegistry` block will automatically use them.
     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
         def customImage = docker.build("${imageName}:${IMAGE_TAG}", "-f ${dockerfile} ${context}")
         customImage.push()
