@@ -50,7 +50,7 @@ pipeline {
                     // It's recommended to manage the terraform.tfvars file securely.
                     // For this example, we create it on the fly.
                     sh 'echo \'aws_key_name = "your-aws-key-pair-name"\' > terraform.tfvars'
-                    sh 'terraform apply -auto-approve -var-file=terraform.tfvars'
+                    sh 'terraform apply -auto-approve -var-file=variables.tf'
                 }
             }
             }
