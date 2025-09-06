@@ -43,18 +43,27 @@ pipeline {
         }
         stage('Provision Infrastructure') {
             steps {
-                    withCredentials([aws(credentialsId: 'aws-terraform-creds')]) {
-                dir('terraform') {
-                    sh 'terraform init'
-                    // You need to pass your AWS key pair name.
-                    // It's recommended to manage the terraform.tfvars file securely.
-                    // For this example, we create it on the fly.
-                    sh 'echo \'aws_key_name = "your-aws-key-pair-name"\' > terraform.tfvars'
-                    sh 'terraform apply -auto-approve -var-file=variables.tf'
+                withCredentials([
+                    aws(credentialsId: 'aws-terraform-creds', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'aws-keypair-name', variable: 'AWS_KEY_NAME')]) 
+                    script {
+                    dir('terraform') {
+                        sh 'terraform init -input=false'
+
+                        // write terraform.tfvars
+                        sh """
+                        cat > terraform.tfvars <<EOF
+                        aws_region   = "us-west-1"
+                        aws_key_name = "${AWS_KEY_NAME}"
+                        EOF
+                        """
+
+                        sh 'terraform apply -auto-approve -var-file=terraform.tfvars'
+                    }
                 }
             }
-            }
         }
+
 
     }
 }
