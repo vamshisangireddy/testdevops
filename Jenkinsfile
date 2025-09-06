@@ -14,9 +14,9 @@ pipeline {
         IMAGE_TAG = "build-${BUILD_NUMBER}"
     }
 
-    """tools {
-        terraform 'terraform-1.6.5' // Assumes a Terraform tool configured in Jenkins
-    }"""
+    //tools {
+     //   terraform 'terraform-1.6.5' // Assumes a Terraform tool configured in Jenkins
+    //}
 
     stages {
         stage('Checkout') {
