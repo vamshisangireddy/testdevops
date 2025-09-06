@@ -26,41 +26,40 @@ pipeline {
             }
         }
 
-        stage('Build and Push Images') {
-            parallel {
-                stage('User Service') {
-                    steps {
-                        script {
-                            def imageName = "${DOCKERHUB_USERNAME}/user-service"
-                            def dockerfile = 'user-service/Dockerfile'
-                            def context = 'user-service'
-                            buildAndPush(imageName, dockerfile, context)
-                        }
+        stage('Build, Tag, and Push') {
+            steps {
+                script {
+                    // Log in to Docker Hub
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USER --password-stdin"
                     }
-                }
-                stage('Product Service') {
-                    steps {
-                        script {
-                            def imageName = "${DOCKERHUB_USERNAME}/product-service"
-                            def dockerfile = 'product-service/Dockerfile'
-                            def context = 'product-service'
-                            buildAndPush(imageName, dockerfile, context)
-                        }
-                    }
-                }
-                stage('Order Service') {
-                    steps {
-                        script {
-                            def imageName = "${DOCKERHUB_USERNAME}/order-service"
-                            def dockerfile = 'order-service/Dockerfile'
-                            def context = 'order-service'
-                            buildAndPush(imageName, dockerfile, context)
-                        }
+
+                    // Build all images
+                    sh "docker compose build --parallel"
+
+                    // Loop through each service
+                    SERVICES.split(' ').each { service ->
+                        // Source image name (e.g., "testdev-user-service:latest")
+                        def sourceImage = "${PROJECT_NAME}-${service}:latest"
+                        
+                        // Target repository (e.g., "vamshisangireddy5/testdevops")
+                        def targetRepo = "${DOCKERHUB_USERNAME}/${DOCKER_REPO_NAME}"
+
+                        echo "Tagging ${sourceImage} for pushing to ${targetRepo}"
+
+                        // Tag the source image with tags that include the service name
+                        // e.g., vamshisangireddy5/testdevops:user-service-build-123
+                        // e.g., vamshisangireddy5/testdevops:user-service-latest
+                        sh "docker tag ${sourceImage} ${targetRepo}:${service}-${IMAGE_TAG}"
+                        sh "docker tag ${sourceImage} ${targetRepo}:${service}-latest"
+
+                        // Push both new tags to your single repository
+                        sh "docker push ${targetRepo}:${service}-${IMAGE_TAG}"
+                        sh "docker push ${targetRepo}:${service}-latest"
                     }
                 }
             }
         }
-
         stage('Provision Infrastructure') {
             steps {
                 dir('terraform') {
