@@ -8,6 +8,7 @@ pipeline {
     environment {
         
         PATH = "/usr/local/bin:${env.PATH}"
+        SERVICES = "user-service product-service order-service"
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         DOCKERHUB_USERNAME = 'DOCKERHUB_CREDENTIALS_USR'
         DOCKERHUB_PASSWORD = 'DOCKERHUB_CREDENTIALS_PSW'
@@ -34,27 +35,12 @@ pipeline {
                         sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USER --password-stdin"
                     }
 
-                    // Build all images
+                    // Build all images in parallel
                     sh "docker compose build --parallel"
 
-                    // Loop through each service
-                    SERVICES.split(' ').each { service ->
-                        // Source image name is now hardcoded with "testdev-"
-                        def sourceImage = "testdev-${service}:latest"
-                        
-                        // Target repository is now hardcoded with "/testdevops"
-                        def targetRepo = "${DOCKERHUB_USERNAME}/testdevops"
-
-                        echo "Tagging ${sourceImage} for pushing to ${targetRepo}"
-
-                        // Tag the source image
-                        sh "docker tag ${sourceImage} ${targetRepo}:${service}-${IMAGE_TAG}"
-                        sh "docker tag ${sourceImage} ${targetRepo}:${service}-latest"
-
-                        // Push the new tags
-                        sh "docker push ${targetRepo}:${service}-${IMAGE_TAG}"
-                        sh "docker push ${targetRepo}:${service}-latest"
-                    }
+                    // Push all images to Docker Hub.
+                    // docker-compose.yml is now responsible for naming the images correctly.
+                    sh "docker compose push"
                 }
             }
         }

@@ -1,8 +1,9 @@
-#version: '3'
-#hello-world microservices architecture with Docker Compose
+version: '3.8'
+# hello-world microservices architecture with Docker Compose
 services:
   user-service:
     build: ./user-service
+    image: ${DOCKERHUB_USERNAME}/testdevops:user-service-${IMAGE_TAG:-latest}
     restart: unless-stopped
     #env_file:
     #  - ./user-service/.env
@@ -18,6 +19,7 @@ services:
 
   product-service:
     build: ./product-service
+    image: ${DOCKERHUB_USERNAME}/testdevops:product-service-${IMAGE_TAG:-latest}
     restart: unless-stopped
     #env_file:
     #  - ./product-service/.env
@@ -28,6 +30,7 @@ services:
 
   order-service:
     build: ./order-service
+    image: ${DOCKERHUB_USERNAME}/testdevops:order-service-${IMAGE_TAG:-latest}
     restart: unless-stopped
     #env_file:
     #  - ./order-service/.env
