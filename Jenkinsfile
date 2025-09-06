@@ -42,27 +42,33 @@ pipeline {
             }
         }
         stage('Provision Infrastructure') {
-            steps {
-                withCredentials([
-                    aws(credentialsId: 'aws-terraform-creds', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'),
-                    string(credentialsId: 'aws-keypair-name', variable: 'AWS_KEY_NAME')]) 
-                    script {
-                    dir('terraform') {
-                        sh 'terraform init -input=false'
+    steps {
+        script {
+            withCredentials([
+                [$class: 'AmazonWebServicesCredentialsBinding',
+                 credentialsId: 'aws-terraform-creds',
+                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'],
+                string(credentialsId: 'aws-keypair-name', variable: 'AWS_KEY_NAME')
+            ]) {
+                dir('terraform') {
+                    sh 'terraform init -input=false'
 
-                        // write terraform.tfvars
-                        sh """
-                        cat > terraform.tfvars <<EOF
-                        aws_region   = "us-west-1"
-                        aws_key_name = "${AWS_KEY_NAME}"
-                        EOF
-                        """
+                    // write terraform.tfvars
+                    sh """
+                    cat > terraform.tfvars <<EOF
+                    aws_region   = "us-west-1"
+                    aws_key_name = "${AWS_KEY_NAME}"
+                    EOF
+                    """
 
-                        sh 'terraform apply -auto-approve -var-file=terraform.tfvars'
-                    }
+                    sh 'terraform apply -auto-approve -var-file=terraform.tfvars'
                 }
             }
         }
+    }
+}
+
 
 
     }
