@@ -6,18 +6,17 @@ pipeline {
         githubPush()
     }
     environment {
-        withDockerRegistry(credentialsId: 'dockerhub-credentials') {
-    // some block
-        }
-        //DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')'''
+        
+        PATH = "/usr/local/bin:${env.PATH}"
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         DOCKERHUB_USERNAME = DOCKERHUB_CREDENTIALS_USR
         // The build number is used to tag the Docker images
         IMAGE_TAG = "build-${BUILD_NUMBER}"
     }
 
-    tools {
-        terraform 'terraform' // Assumes a Terraform tool configured in Jenkins
-    }
+    """tools {
+        terraform 'terraform-1.6.5' // Assumes a Terraform tool configured in Jenkins
+    }"""
 
     stages {
         stage('Checkout') {

@@ -37,7 +37,7 @@
         join_command: "{{ join_command.stdout }}"
 
 - name: Configure K8s Worker Nodes
-  hosts: k8s_workers
+  hosts: k8k8s_worker_1,
   become: yes
   tasks:
     - name: Install kubelet, kubeadm
