@@ -8,7 +8,6 @@ pipeline {
     environment {
         
         PATH = "/usr/local/bin:${env.PATH}"
-        SERVICES = "user-service product-service order-service"
         // The build number is used to tag the Docker images
         IMAGE_TAG = "build-${BUILD_NUMBER}"
     }
@@ -29,11 +28,12 @@ pipeline {
                 script {
                     // Log in to Docker Hub and set DOCKERHUB_USERNAME
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        // Set the username environment variable, ensuring it's lowercase for Docker Hub
                         env.DOCKERHUB_USERNAME = DOCKER_USER.toLowerCase()
                         sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USER --password-stdin"
 
-                        // Build all images in parallel
-                        // The DOCKERHUB_USERNAME is passed to the compose command
+                        // Build all images in parallel.
+                        // The DOCKERHUB_USERNAME is now available for docker-compose.
                         sh "docker compose build --parallel"
 
                         // Push all images to Docker Hub.
@@ -86,9 +86,9 @@ pipeline {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig']) {
                     sh """
-                    sed -i 's|image: .*|image: ${DOCKERHUB_USERNAME}/user-service:${IMAGE_TAG}|' k8s/user-service.yaml
-                    sed -i 's|image: .*|image: ${DOCKERHUB_USERNAME}/product-service:${IMAGE_TAG}|' k8s/product-service.yaml
-                    sed -i 's|image: .*|image: ${DOCKERHUB_USERNAME}/order-service:${IMAGE_TAG}|' k8s/order-service.yaml
+                    sed -i 's|image: .*|image: ${env.DOCKERHUB_USERNAME}/testdevops:user-service-${IMAGE_TAG}|' k8s/user-service.yaml
+                    sed -i 's|image: .*|image: ${env.DOCKERHUB_USERNAME}/testdevops:product-service-${IMAGE_TAG}|' k8s/product-service.yaml
+                    sed -i 's|image: .*|image: ${env.DOCKERHUB_USERNAME}/testdevops:order-service-${IMAGE_TAG}|' k8s/order-service.yaml
                     """
                     sh 'kubectl apply -f k8s/user-service.yaml'
                     sh 'kubectl apply -f k8s/product-service.yaml'
