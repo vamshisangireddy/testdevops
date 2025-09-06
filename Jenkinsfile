@@ -21,6 +21,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+                echo "Checked out commit ${env.GIT_COMMIT} from branch ${env.GIT_BRANCH}"
             }
         }
 
