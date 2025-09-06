@@ -10,6 +10,7 @@ pipeline {
         PATH = "/usr/local/bin:${env.PATH}"
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         DOCKERHUB_USERNAME = DOCKERHUB_CREDENTIALS_USR
+        DOCKERHUB_PASSWORD = DOCKERHUB_CREDENTIALS_PSW
         // The build number is used to tag the Docker images
         IMAGE_TAG = "build-${BUILD_NUMBER}"
     }
