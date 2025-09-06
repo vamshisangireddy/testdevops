@@ -39,21 +39,19 @@ pipeline {
 
                     // Loop through each service
                     SERVICES.split(' ').each { service ->
-                        // Source image name (e.g., "testdev-user-service:latest")
-                        def sourceImage = "${PROJECT_NAME}-${service}:latest"
+                        // Source image name is now hardcoded with "testdev-"
+                        def sourceImage = "testdev-${service}:latest"
                         
-                        // Target repository (e.g., "vamshisangireddy5/testdevops")
-                        def targetRepo = "${DOCKERHUB_USERNAME}/${DOCKER_REPO_NAME}"
+                        // Target repository is now hardcoded with "/testdevops"
+                        def targetRepo = "${DOCKERHUB_USERNAME}/testdevops"
 
                         echo "Tagging ${sourceImage} for pushing to ${targetRepo}"
 
-                        // Tag the source image with tags that include the service name
-                        // e.g., vamshisangireddy5/testdevops:user-service-build-123
-                        // e.g., vamshisangireddy5/testdevops:user-service-latest
+                        // Tag the source image
                         sh "docker tag ${sourceImage} ${targetRepo}:${service}-${IMAGE_TAG}"
                         sh "docker tag ${sourceImage} ${targetRepo}:${service}-latest"
 
-                        // Push both new tags to your single repository
+                        // Push the new tags
                         sh "docker push ${targetRepo}:${service}-${IMAGE_TAG}"
                         sh "docker push ${targetRepo}:${service}-latest"
                     }
