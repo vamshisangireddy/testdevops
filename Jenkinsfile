@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    triggers 
+    triggers {
         githubPush()
     }
     environment {
@@ -57,3 +57,4 @@ pipeline {
         }
 
     }
+}
