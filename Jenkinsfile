@@ -52,6 +52,14 @@ pipeline {
                  // Navigate to the terraform directory and run terraform commands
                 dir('terraform') {
                     sh 'terraform init -input=false'
+                    sh 'terraform plan -out=tfplan -input=false'
+                    sh 'terraform apply -auto-approve'
+
+                }
+            }
+        }
+    }
+}
                     sh 'terraform apply -auto-approve'
                 }
             }
