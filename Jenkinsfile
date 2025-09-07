@@ -66,11 +66,13 @@ pipeline {
                             inventory.ini > inventory.ini.tmp && mv inventory.ini.tmp inventory.ini
                     '''
                     sh "echo 'Inventory file:' && cat inventory.ini"
-                    withCredentials([file(credentialsId: 'jenkins-ssh-key', variable: 'SSH_KEY_FILE')]) {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'jenkins-ssh-key', keyFileVariable: 'SSH_KEY_FILE', usernameVariable: 'SSH_USER')]) {
     sh '''
-        ANSIBLE_PRIVATE_KEY_FILE=${SSH_KEY_FILE} \
-        ansible-playbook playbook.yml
+        ansible-playbook playbook.yml \
+          --private-key ${SSH_KEY_FILE} -u ${SSH_USER}
     '''
+}
+
 }
                 }
             }
