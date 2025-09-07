@@ -38,8 +38,8 @@ resource "aws_security_group" "k8s_sg" {
 }
 
 resource "aws_instance" "k8s_master" {
-  ami           = "ami-06e54d05255faf8f6" # Ubuntu 20.04 LTS in us-east-1, change if needed
-  instance_type = "t2.medium"
+  ami           = "ami-0945610b37068d87a" # Ubuntu 20.04 LTS in us-east-1, change if needed
+  instance_type = "t2.micro"
   subnet_id     = aws_subnet.k8s_subnet.id
   vpc_security_group_ids = [aws_security_group.k8s_sg.id]
   key_name      = var.aws_key_name
@@ -51,8 +51,8 @@ resource "aws_instance" "k8s_master" {
 
 resource "aws_instance" "k8s_workers" {
   count         = 2
-  ami           = "ami-06e54d05255faf8f6" # Ubuntu 20.04 LTS in us-east-1, change if needed
-  instance_type = "t2.medium"
+  ami           = "ami-0945610b37068d87a" # Ubuntu 20.04 LTS in us-east-1, change if needed
+  instance_type = "t2.micro"
   subnet_id     = aws_subnet.k8s_subnet.id
   vpc_security_group_ids = [aws_security_group.k8s_sg.id]
   key_name      = var.aws_key_name
