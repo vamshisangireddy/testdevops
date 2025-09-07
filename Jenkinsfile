@@ -71,11 +71,10 @@ pipeline {
         ansible-playbook playbook.yml \
           --private-key ${SSH_KEY_FILE} -u ${SSH_USER}
     '''
-}
 
-}
                 }
             }
         }
+    }
     }
 }
