@@ -53,6 +53,7 @@ pipeline {
         stage('Configure K8s Cluster') {
             steps {
                 dir('ansible') {
+                    sh "echo 'Waiting 30s for EC2 instances to boot...' && sleep 30"
                     sh 'terraform -chdir=../terraform output -json > tf_output.json'
                     sh '''
                         MASTER_IP=$(jq -r .k8s_master_public_ip.value tf_output.json)
