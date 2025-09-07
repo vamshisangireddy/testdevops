@@ -65,12 +65,7 @@ pipeline {
                             -e "s/\\${k8s_worker_2_public_ip}/$WORKER_2_IP/" \
                             inventory.ini > inventory.ini.tmp && mv inventory.ini.tmp inventory.ini
                     '''
-                    sh "echo 'Inventory file:' && cat inventory.ini"
-                    withCredentials([sshUserPrivateKey(credentialsId: 'jenkins-ssh-key', keyFileVariable: 'SSH_KEY_FILE', usernameVariable: 'SSH_USER')]) {
-    sh '''
-        ansible-playbook playbook.yml \
-          --private-key ${SSH_KEY_FILE} -u ${SSH_USER}
-    '''
+                    ansiblePlaybook credentialsId: 'jenkins-ssh-key', disableHostKeyChecking: true, installation: 'ansible', inventory: 'inventory.ini', playbook: 'playbook.yml', vaultTmpPath: ''
 
                 }
             }
