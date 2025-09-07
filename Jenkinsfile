@@ -5,7 +5,7 @@ pipeline {
     }
     environment {
         AWS_REGION = 'us-west-1'
-        PATH = "/usr/local/bin:${env.PATH}"
+        PATH = "/opt/homebrew/bin/:/usr/local/bin:${env.PATH}"
         // The build number is used to tag the Docker images
         IMAGE_TAG = "build-${BUILD_NUMBER}"
     }
