@@ -32,8 +32,14 @@
         name: kubectl
         state: present
 
+    - name: Check if cluster is already initialized
+      stat:
+        path: /etc/kubernetes/admin.conf
+      register: kubeadm_init_stat
+
     - name: Initialize the Kubernetes cluster using kubeadm
       command: kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU
+      when: not kubeadm_init_stat.stat.exists
 
     - name: Set up kubectl for the ubuntu user
       command: "{{ item }}"

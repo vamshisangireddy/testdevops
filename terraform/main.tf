@@ -43,6 +43,7 @@ resource "aws_instance" "k8s_master" {
   subnet_id     = aws_subnet.k8s_subnet.id
   vpc_security_group_ids = [aws_security_group.k8s_sg.id]
   key_name      = var.aws_key_name
+  associate_public_ip_address = true
 
   tags = {
     Name = "k8s-master"
@@ -56,6 +57,7 @@ resource "aws_instance" "k8s_workers" {
   subnet_id     = aws_subnet.k8s_subnet.id
   vpc_security_group_ids = [aws_security_group.k8s_sg.id]
   key_name      = var.aws_key_name
+  associate_public_ip_address = true
 
   tags = {
     Name = "k8s-worker-${count.index + 1}"
