@@ -44,7 +44,12 @@ pipeline {
         stage('Provision Infrastructure') {
     steps {
         script {
-             withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-terraform-creds', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+             withCredentials([aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-terraform-creds', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')])
+             {
+                 // Set AWS Key Name
+                 env.AWS_KEY_NAME = "jenkins-terraform" // Ensure this key pair exists in your AWS account
+
+                 // Navigate to the terraform directory and run terraform commands
                 dir('terraform') {
                     sh 'terraform init -input=false'
 
