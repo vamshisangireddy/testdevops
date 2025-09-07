@@ -52,15 +52,6 @@ pipeline {
                  // Navigate to the terraform directory and run terraform commands
                 dir('terraform') {
                     sh 'terraform init -input=false'
-
-                    // write terraform.tfvars
-                    sh """
-                    cat > terraform.tfvars <<EOF
-                    aws_region   = "us-west-1"
-                    aws_key_name = "${AWS_KEY_NAME}"
-                    EOF
-                    """
-
                     sh 'terraform apply -auto-approve'
                 }
             }
