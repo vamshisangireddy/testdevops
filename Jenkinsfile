@@ -28,6 +28,7 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
                         // Set the username environment variable, ensuring it's lowercase for Docker Hub
                         env.DOCKERHUB_USERNAME = DOCKER_USER.toLowerCase()
+                        sh 'open -a docker'
                         sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USER --password-stdin"
 
                         // Build all images in parallel.
