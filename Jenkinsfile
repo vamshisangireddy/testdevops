@@ -6,12 +6,11 @@ pipeline {
     environment {
         AWS_REGION = 'us-west-1'
         PATH = "/opt/homebrew/bin/:/usr/local/bin:${env.PATH}"
-        // The build number is used to tag the Docker images
         IMAGE_TAG = "build-${BUILD_NUMBER}"
     }
 
     tools {
-       terraform 'terraform' // Assumes a Terraform tool configured in Jenkins
+       terraform 'terraform' 
        ansible 'ansible'
     }
 
@@ -79,13 +78,6 @@ pipeline {
                     '''
                     sh "echo 'Inventory file:' && cat inventory.ini"
                     ansiblePlaybook credentialsId: 'jenkins-ssh-key', installation: 'ansible', inventory: 'inventory.ini', playbook: 'playbook.yml'
-                    // You'll need to add your SSH private key to the Jenkins agent
-                    // and reference it here, or use the SSH Agent plugin.
-                    //sh'''
-                    ///opt/homebrew/bin/ansible-playbook \
-                    //-i inventory.ini.tpl playbook.yml \
-                    //--private-key /Users/vamshisangireddy/.jenkins/workspace/testdev/ansible/ssh13068254442594307973.key \
-                    //-u ubuntu'''
                 }
             }
         }
