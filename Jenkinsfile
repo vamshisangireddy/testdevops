@@ -77,6 +77,7 @@ pipeline {
                             -e "s/\\${k8s_worker_2_public_ip}/$WORKER_2_IP/" \\
                             inventory.ini > inventory.ini.tmp && mv inventory.ini.tmp inventory.ini
                     '''
+                    sh "echo 'Inventory file:' && cat inventory.ini"
                     // You'll need to add your SSH private key to the Jenkins agent
                     // and reference it here, or use the SSH Agent plugin.
                     ansiblePlaybook(
