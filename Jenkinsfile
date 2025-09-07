@@ -12,7 +12,7 @@ pipeline {
 
     tools {
        terraform 'terraform' // Assumes a Terraform tool configured in Jenkins
-       //ansible 'ansible-playbook'
+       ansible 'ansible'
     }
 
     stages {
@@ -78,13 +78,14 @@ pipeline {
                             inventory.ini > inventory.ini.tmp && mv inventory.ini.tmp inventory.ini
                     '''
                     sh "echo 'Inventory file:' && cat inventory.ini"
+                    ansiblePlaybook credentialsId: 'jenkins-ssh-key', installation: 'ansible', inventory: 'inventory.ini', playbook: 'playbook.yml'
                     // You'll need to add your SSH private key to the Jenkins agent
                     // and reference it here, or use the SSH Agent plugin.
-                    sh'''
-                    /opt/homebrew/bin/ansible-playbook \
-                    -i inventory.ini playbook.yml \
-                    --private-key /Users/vamshisangireddy/.jenkins/workspace/testdev/ansible/ssh13068254442594307973.key \
-                    -u ubuntu'''
+                    //sh'''
+                    ///opt/homebrew/bin/ansible-playbook \
+                    //-i inventory.ini.tpl playbook.yml \
+                    //--private-key /Users/vamshisangireddy/.jenkins/workspace/testdev/ansible/ssh13068254442594307973.key \
+                    //-u ubuntu'''
                 }
             }
         }
