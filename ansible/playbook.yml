@@ -15,6 +15,13 @@
           - curl
           - kubelet
           - kubeadm
+          - containerd
+
+    - name: Ensure containerd is running and enabled
+      service:
+        name: containerd
+        state: started
+        enabled: yes
 
 - name: Configure K8s Master Node
   hosts: k8s_master
@@ -26,15 +33,30 @@
         state: present
 
     - name: Initialize the Kubernetes cluster using kubeadm
-      command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU
+
+    - name: Set up kubectl for the ubuntu user
+      command: "{{ item }}"
+      with_items:
+        - mkdir -p /home/ubuntu/.kube
+        - cp /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
+        - chown ubuntu:ubuntu /home/ubuntu/.kube/config
+
+    - name: Install Flannel Pod Network
+      become: false
+      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+    - name: Get the join command
+      command: kubeadm token create --print-join-command
+      register: join_command_result
+
+    - name: Set join command as a fact
       set_fact:
-        join_command: "{{ join_command.stdout }}"
+        join_command: "{{ join_command_result.stdout }}"
 
 - name: Configure K8s Worker Nodes
   hosts: k8s_workers
   become: yes
   tasks:
     - name: Join worker nodes to the cluster
-      # The inventory name for the master is the IP address from the template
-      command: "{{ hostvars[groups['k8s_master'][0]].join_command }}"
-
+      command: "{{ hostvars[groups['k8s_master'][0]].join_command }} --ignore-preflight-errors=NumCPU"
