@@ -49,7 +49,7 @@ pipeline {
                  credentialsId: 'aws-terraform-creds',
                  accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                  secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'],
-                string(credentialsId: 'aws-keypair-name', variable: 'AWS_KEY_NAME')
+                string(credentialsId: 'aws-key', variable: 'AWS_KEY_NAME')
             ]) {
                 dir('terraform') {
                     sh 'terraform init -input=false'
