@@ -61,7 +61,7 @@ pipeline {
                     EOF
                     """
 
-                    sh 'terraform apply -auto-approve -var-file=terraform.tfvars'
+                    sh 'terraform apply -auto-approve'
                 }
             }
         }
