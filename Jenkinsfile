@@ -78,13 +78,10 @@ pipeline {
                             inventory.ini > inventory.ini.tmp && mv inventory.ini.tmp inventory.ini
                     '''
                     sh "echo 'Inventory file:' && cat inventory.ini"
-                    // You'll need to add your SSH private key to the Jenkins agent
-                    // and reference it here, or use the SSH Agent plugin.
-                    ansiblePlaybook(
-                        playbook: 'playbook.yml',
-                        inventory: 'inventory.ini',
-                        credentialsId: 'jenkins-ssh-key'
-                    )
+                    /opt/homebrew/bin/ansible-playbook \
+                    -i inventory.ini playbook.yml \
+                    --private-key /Users/vamshisangireddy/.jenkins/workspace/testdev/ansible/ssh13068254442594307973.key \
+                    -u ubuntu
                 }
             }
         }
