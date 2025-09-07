@@ -12,7 +12,7 @@ pipeline {
 
     tools {
        terraform 'terraform' // Assumes a Terraform tool configured in Jenkins
-       ansible 'ansible'
+       //ansible 'ansible-playbook'
     }
 
     stages {
