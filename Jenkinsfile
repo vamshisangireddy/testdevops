@@ -53,7 +53,6 @@ pipeline {
         stage('Configure K8s Cluster') {
             steps {
                 dir('ansible') {
-                    sh "echo 'Waiting 30s for EC2 instances to boot...' && sleep 30"
                     sh 'terraform -chdir=../terraform output -json > tf_output.json'
                     sh '''
                         MASTER_IP=$(jq -r .k8s_master_public_ip.value tf_output.json)
@@ -65,7 +64,7 @@ pipeline {
                             -e "s/\\${k8s_worker_2_public_ip}/$WORKER_2_IP/" \
                             inventory.ini > inventory.ini.tmp && mv inventory.ini.tmp inventory.ini
                     '''
-                    ansiblePlaybook credentialsId: 'jenkins-ssh-key', disableHostKeyChecking: true, installation: 'ansible', inventory: 'inventory.ini', playbook: 'playbook.yml', vaultTmpPath: ''
+                    ansiblePlaybook credentialsId: 'jenkins-ssh-key', disableHostKeyChecking: true, installation: 'ansible', inventory: 'inventory.ini', playbook: 'playbook.yml'
 
                 }
             }
