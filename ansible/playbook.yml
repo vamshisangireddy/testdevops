@@ -24,9 +24,13 @@
         - net.ipv4.ip_forward
 
     - name: Install prerequisite packages
-      yum:
-        name: ['ca-certificates', 'gnupg']
+      apt:
+        name:
+          - ca-certificates
+          - gnupg
+          - python3-apt
         state: present
+        update_cache: yes
 
     - name: Create directory for apt keys
       file:
