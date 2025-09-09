@@ -5,9 +5,9 @@
   gather_facts: no
   tasks:
     - name: Install required packages
-      apt:
+      yum:
         name:
-          - apt-transport-https
+          #- apt-transport-https
           - ca-certificates
           - curl
           - gnupg
