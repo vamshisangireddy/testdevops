@@ -1,9 +1,8 @@
----
 - name: Install K8s prerequisites on all nodes
   hosts: k8s_master,k8s_workers
   become: yes
   tasks:
-    - name: Let the nodes see bridged traffic
+    - name: Enable kernel modules
       modprobe:
         name: "{{ item }}"
         state: present
@@ -27,16 +26,15 @@
       package:
         name:
           - ca-certificates
-          #- gnupg2
           - python3
         state: present
 
-    - name: Add Kubernetes repo GPG key
+    - name: Add Kubernetes GPG key
       get_url:
         url: https://pkgs.k8s.io/core:/stable:/v1.29/rpm/repodata/repomd.xml.key
         dest: /etc/pki/rpm-gpg/kubernetes.gpg
 
-    - name: Add Kubernetes YUM repository
+    - name: Add Kubernetes YUM repo
       yum_repository:
         name: kubernetes
         description: Kubernetes
@@ -53,71 +51,15 @@
           - kubectl
           - containerd
         state: present
-      notify: Configure containerd
 
-  handlers:
-    - name: Configure containerd
-      block:
-        - name: Create containerd config directory
-          file:
-            path: /etc/containerd
-            state: directory
+    - name: Enable and start containerd
+      service:
+        name: containerd
+        state: started
+        enabled: yes
 
-        - name: Generate containerd default config
-          command: containerd config default > /etc/containerd/config.toml
-          args:
-            creates: /etc/containerd/config.toml
-
-        - name: Enable systemd cgroup driver in containerd
-          replace:
-            path: /etc/containerd/config.toml
-            regexp: 'SystemdCgroup = false'
-            replace: 'SystemdCgroup = true'
-
-        - name: Restart containerd
-          service:
-            name: containerd
-            state: restarted
-
-- name: Configure K8s Master Node
-  hosts: k8s_master
-  become: yes
-  tasks:
-    - name: Initialize the Kubernetes cluster
-      command: kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU --v=5
-      args:
-        creates: /etc/kubernetes/admin.conf
-
-    - name: Create .kube directory for remote user
-      file:
-        path: "/home/{{ ansible_user }}/.kube"
-        state: directory
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
-
-    - name: Copy admin.conf to user's .kube directory
-      copy:
-        src: /etc/kubernetes/admin.conf
-        dest: "/home/{{ ansible_user }}/.kube/config"
-        remote_src: yes
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
-
-    - name: Install Flannel Pod Network
-      command: "kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml"
-      become_user: "{{ ansible_user }}"
-      args:
-        creates: /run/flannel/subnet.env
-
-    - name: Get the join command
-      command: kubeadm token create --print-join-command
-      register: join_command_result
-
-- name: Configure K8s Worker Nodes
-  hosts: k8s_workers
-  become: yes
-  tasks:
-    - name: Join worker nodes to cluster
-      command: "{{ hostvars[groups['k8s_master'][0]].join_command_result.stdout }} --ignore-preflight-errors=NumCPU"
-      args:
-        creates: /etc/kubernetes/kubelet.conf
+    - name: Enable and start kubelet
+      service:
+        name: kubelet
+        state: started
+        enabled: yes
