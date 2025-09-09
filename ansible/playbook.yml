@@ -25,7 +25,7 @@
 
     - name: Install prerequisite packages
       apt:
-        name: ['ca-certificates', 'curl', 'gnupg']
+        name: ['ca-certificates', 'gnupg']
         state: present
 
     - name: Create directory for apt keys
