@@ -69,6 +69,18 @@ pipeline {
                 }
             }
         }
+        stage('Deploy to K8s') {
+            steps {
+                script {
+                    dir('k8s') {
+                        sh "sed -i 's|image:.*|image: ${env.DOCKERHUB_USERNAME}/testdevops:user-service-${env.IMAGE_TAG}|' user-service.yaml"
+                        sh "sed -i 's|image:.*|image: ${env.DOCKERHUB_USERNAME}/testdevops:product-service-${env.IMAGE_TAG}|' product-service.yaml"
+                        sh "sed -i 's|image:.*|image: ${env.DOCKERHUB_USERNAME}/testdevops:order-service-${env.IMAGE_TAG}|' order-service.yaml"
+                        sh 'kubectl apply -f .'
+                    }
+                }
+            }
+    }
     }
     }
 
