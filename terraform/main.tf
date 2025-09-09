@@ -63,9 +63,6 @@ resource "aws_security_group" "k8s_sg" {
   name        = "k8s-sg"
   description = "Allow inbound traffic for K8s + SSH"
   vpc_id      = aws_vpc.k8s_vpc.id
-  lifecycle {
-    create_before_destroy = true
-  }
 
   tags = {
     Name = "k8s-sg"
