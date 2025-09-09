@@ -64,7 +64,7 @@ pipeline {
                             -e "s/\\${k8s_worker_2_public_ip}/$WORKER_2_IP/" \
                             inventory.ini > inventory.ini.tmp && mv inventory.ini.tmp inventory.ini
                     '''
-                    ansiblePlaybook credentialsId: 'jenkins-ssh-key', disableHostKeyChecking: true, installation: 'ansible', inventory: 'inventory.ini', playbook: 'playbook.yml' -v
+                    ansiblePlaybook credentialsId: 'jenkins-ssh-key', disableHostKeyChecking: true, installation: 'ansible', inventory: 'inventory.ini', playbook: 'playbook.yml'
 
                 }
             }
