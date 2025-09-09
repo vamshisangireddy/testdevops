@@ -43,6 +43,7 @@ pipeline {
                         env.AWS_KEY_NAME = "jenkins-terraform"
                         dir('terraform') {
                             sh 'terraform init -input=false'
+                            sh 'terrafrom destroy -auto-approve'
                             sh "terraform apply -auto-approve -var aws_key_name=$AWS_KEY_NAME"
                         }
                     }
