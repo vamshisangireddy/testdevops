@@ -9,9 +9,9 @@
         name:
           #- apt-transport-https
           - ca-certificates
-          - curl
+          #- curl
           - gnupg
-          - lsb-release
+          #- lsb-release
         state: present
         update_cache: yes
 
