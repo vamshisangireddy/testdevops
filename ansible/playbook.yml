@@ -2,29 +2,52 @@
 - name: Install K8s prerequisites on all nodes
   hosts: k8s_master,k8s_workers
   become: yes
-  gather_facts: no
   tasks:
-    - name: Install required packages
-      yum:
-        name:
-          #- apt-transport-https
-          - ca-certificates
-          #- curl
-          - gnupg
-          #- lsb-release
+    - name: Let the nodes see bridged traffic
+      modprobe:
+        name: "{{ item }}"
         state: present
-        update_cache: yes
+      loop:
+        - overlay
+        - br_netfilter
 
-    - name: Add Kubernetes apt key
-      apt_key:
-        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    - name: Set up required sysctl params
+      sysctl:
+        name: "{{ item }}"
+        value: '1'
+        sysctl_set: yes
+        state: present
+        reload: yes
+      loop:
+        - net.bridge.bridge-nf-call-iptables
+        - net.bridge.bridge-nf-call-ip6tables
+        - net.ipv4.ip_forward
+
+    - name: Install prerequisite packages
+      apt:
+        name: ['ca-certificates', 'curl', 'gnupg']
         state: present
 
-    - name: Add Kubernetes repository
+    - name: Create directory for apt keys
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Add Kubernetes GPG key
+      get_url:
+        url: https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key
+        dest: /tmp/kubernetes-apt-key.asc
+
+    - name: Dearmor Kubernetes GPG key
+      command: gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/kubernetes-apt-key.asc
+      args:
+        creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+    - name: Add Kubernetes apt repository
       apt_repository:
-        repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /"
         state: present
-        filename: kubernetes
 
     - name: Install Kubernetes components and containerd
       apt:
@@ -35,48 +58,73 @@
           - containerd
         state: present
         update_cache: yes
+      notify: Configure containerd
 
-    - name: Ensure containerd is running and enabled
-      service:
-        name: containerd
-        state: started
-        enabled: yes
+  handlers:
+    - name: Configure containerd
+      block:
+        - name: Create containerd config directory
+          file:
+            path: /etc/containerd
+            state: directory
+
+        - name: Generate containerd default config
+          command: containerd config default > /etc/containerd/config.toml
+          args:
+            creates: /etc/containerd/config.toml
+
+        - name: Enable systemd cgroup driver in containerd
+          replace:
+            path: /etc/containerd/config.toml
+            regexp: 'SystemdCgroup = false'
+            replace: 'SystemdCgroup = true'
+
+        - name: Restart containerd
+          service:
+            name: containerd
+            state: restarted
 
 - name: Configure K8s Master Node
   hosts: k8s_master
   become: yes
   tasks:
-    - name: Check if cluster is already initialized
-      stat:
-        path: /etc/kubernetes/admin.conf
-      register: kubeadm_init_stat
-
     - name: Initialize the Kubernetes cluster
-      command: kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU
-      when: not kubeadm_init_stat.stat.exists
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU --v=5
+      args:
+        creates: /etc/kubernetes/admin.conf
 
-    - name: Set up kubectl for ubuntu user
-      command: "{{ item }}"
-      with_items:
-        - mkdir -p /home/ubuntu/.kube
-        - cp /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
-        - chown ubuntu:ubuntu /home/ubuntu/.kube/config
+    - name: Create .kube directory for remote user
+      file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: Copy admin.conf to user's .kube directory
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "/home/{{ ansible_user }}/.kube/config"
+        remote_src: yes
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
 
     - name: Install Flannel Pod Network
-      become: false
-      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+      command: "kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml"
+      become_user: "{{ ansible_user }}"
+      args:
+        # Run only if the flannel daemonset is not already there
+        creates: /run/flannel/subnet.env
 
     - name: Get the join command
       command: kubeadm token create --print-join-command
       register: join_command_result
-
-    - name: Set join command fact
-      set_fact:
-        join_command: "{{ join_command_result.stdout }}"
 
 - name: Configure K8s Worker Nodes
   hosts: k8s_workers
   become: yes
   tasks:
     - name: Join worker nodes to cluster
-      command: "{{ hostvars[groups['k8s_master'][0]].join_command }} --ignore-preflight-errors=NumCPU"
+      command: "{{ hostvars[groups['k8s_master'][0]].join_command_result.stdout }} --ignore-preflight-errors=NumCPU"
+      args:
+        # Run only if kubelet is not configured
+        creates: /etc/kubernetes/kubelet.conf
