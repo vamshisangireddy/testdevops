@@ -24,7 +24,7 @@
         - net.ipv4.ip_forward
 
     - name: Install prerequisite packages
-      apt:
+      yum:
         name: ['ca-certificates', 'gnupg']
         state: present
 
