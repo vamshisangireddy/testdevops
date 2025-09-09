@@ -27,7 +27,7 @@
       package:
         name:
           - ca-certificates
-          - gnupg2
+          #- gnupg2
           - python3
         state: present
 
