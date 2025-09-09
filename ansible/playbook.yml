@@ -2,7 +2,7 @@
 - name: Install K8s prerequisites on all nodes
   hosts: k8s_master,k8s_workers
   become: yes
-  gather_facts: yes
+  gather_facts: no
   tasks:
     - name: Install required packages
       apt:
